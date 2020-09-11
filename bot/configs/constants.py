@@ -32,6 +32,17 @@ red_emotes = {
     "J": "<:rJ:623564440582881282>"
 }
 
+# BlackJack emotes
 hit_emote_id = 753975475910475926
 stay_emote_id = 753975899111555133
 double_emote_id = 753975477319893033
+
+# Flower pocker emotes
+
+flower_emotes  = {
+    "red": "<:pepeOK:731169238332473394>",
+    "blue": "<:pepecross:731169363121668166>",
+    "yellow": "<:monkaS:731169228639698947>",
+    "purple": "<:monkaHmm:731169228672991262>",
+    "pastel": "<:PepeHands:731169236478722178>"
+}

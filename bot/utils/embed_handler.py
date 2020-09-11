@@ -51,7 +51,7 @@ def bj_bust_embed(user: discord.User, player, show=False):
 def bj_push_embed(user: discord.User, player):
     embed = authored_embed(user, player, f"**Outcome: ** Its a tie!\n"
                                          f"{player.bet_amount} is added back to your account.",
-                           discord.Color.dark_red())
+                           discord.Color.dark_blue())
     card_string = "".join(card.emote for card in player.game.dealer_cards)
     embed.add_field(name="Dealer's hand", value=card_string)
     return embed

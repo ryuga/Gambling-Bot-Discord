@@ -59,7 +59,9 @@ class Jack(commands.Cog):
         participants = game.participants
         dealer_card_value = await self.calculate_card_value(game.dealer_cards)
         for player in list(participants):
-            if dealer_card_value > participants[player].card_value:
+            if dealer_card_value > 21:
+                await self.win_blackjack(participants[player])
+            elif dealer_card_value > participants[player].card_value:
                 await self.lose_blackjack(participants[player])
             elif dealer_card_value < participants[player].card_value:
                 await self.win_blackjack(participants[player])
@@ -101,9 +103,12 @@ class Jack(commands.Cog):
 
     async def blackjack(self, player):
         me = self.bot.get_user(player.user_id)
-        embed = bj_win_embed(me, player)
+        embed = bj_win_embed(me, player, show=True)
         embed.title = "BlackJack!"
-        await player.message.edit(embed=embed)
+        if await self.calculate_card_value(player.game.dealer_cards) == 21:
+            await self.push_blackjack(player)
+        else:
+            await player.message.edit(embed=embed)
         await self.remove(player)
 
     async def bust(self, player):
@@ -121,6 +126,7 @@ class Jack(commands.Cog):
 
     async def stay(self, player):
         player.stay = True
+        await self.check_blackjack(player)
         active_game_session = False
         participants = player.game.participants
         for person in participants:
@@ -184,7 +190,7 @@ class Jack(commands.Cog):
                 await player.message.remove_reaction(reaction, user)
             try:
                 if payload.user_id == player.user_id:
-                    await self._reaction_options[payload.emoji.id](player)
+                    await self._reaction_options[payload.emoji.id](player)  # noqa
             except Exception as E:
                 print(E)
 

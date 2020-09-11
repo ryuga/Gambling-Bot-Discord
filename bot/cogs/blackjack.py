@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 from bot.utils.cards import Game, Player
-from bot.utils.embed_handler import simple_embed, jack_embed, bj_bust_embed, bj_win_embed
+from bot.utils.embed_handler import simple_embed, jack_embed, bj_bust_embed, bj_win_embed, bj_push_embed
 from bot.configs.constants import hit_emote_id, stay_emote_id, double_emote_id
 
 face_cards = ["K", "Q", "J"]
@@ -20,26 +20,78 @@ class Jack(commands.Cog):
             double_emote_id: self.double
         }
 
-    async def check_blackjack(self, player):
-        player.card_value = 0
-        count = 0
-        for card in player.cards_owned:
+    @staticmethod
+    async def calculate_card_value(cards: list, dealer=False):
+        value = 0
+        a_count = 0
+        for card in cards:
             if card.name == "A":
-                count += 1
+                a_count += 1
             elif card.name in face_cards:
-                player.card_value += 10
+                value += 10
             else:
-                player.card_value += int(card.name)
-        if count != 0:
-            for _ in range(count):
-                if player.card_value + 11 > 21:
-                    player.card_value += 1
-                else:
-                    player.card_value += 11
+                value += int(card.name)
+        if not dealer:
+            if a_count != 0:
+                for _ in range(a_count):
+                    if value + 11 > 21:
+                        value += 1
+                    else:
+                        value += 11
+            return value
+        else:
+            if a_count != 0:
+                for _ in range(a_count):
+                    if value > 17:
+                        value += 1
+                    else:
+                        value += 11
+            return value
+
+    async def check_blackjack(self, player):
+        player.card_value = await self.calculate_card_value(player.cards_owned)
         if player.card_value > 21:
             await self.bust(player)
         if player.card_value == 21:
             await self.blackjack(player)
+
+    async def evaluate_results(self, game):
+        participants = game.participants
+        dealer_card_value = await self.calculate_card_value(game.dealer_cards)
+        for player in list(participants):
+            if dealer_card_value > participants[player].card_value:
+                await self.lose_blackjack(participants[player])
+            elif dealer_card_value < participants[player].card_value:
+                await self.win_blackjack(participants[player])
+            else:
+                await self.push_blackjack(participants[player])
+
+    async def win_blackjack(self, player):
+        me = self.bot.get_user(player.user_id)
+        await player.message.edit(embed=bj_win_embed(me, player, show=True))
+        await self.remove(player)
+
+    async def lose_blackjack(self, player):
+        me = self.bot.get_user(player.user_id)
+        await player.message.edit(embed=bj_bust_embed(me, player, show=True))
+        await self.remove(player)
+
+    async def push_blackjack(self, player):
+        me = self.bot.get_user(player.user_id)
+        await player.message.edit(embed=bj_push_embed(me, player))
+        await self.remove(player)
+
+    async def dealers_play(self, player):
+        print("Dealer plays")
+        while True:
+            cards = player.game.dealer_cards
+            card_value = await self.calculate_card_value(cards, dealer=True)
+            if card_value < 17:
+                random_cards = player.game.deck.get_random_cards(1)
+                player.game.dealer_cards.append(random_cards[0])
+            else:
+                break
+        await self.evaluate_results(player.game)
 
     async def remove(self, player):
         await player.message.clear_reactions()
@@ -49,14 +101,17 @@ class Jack(commands.Cog):
 
     async def blackjack(self, player):
         me = self.bot.get_user(player.user_id)
-        await player.message.edit(embed=bj_win_embed(me, player))
+        embed = bj_win_embed(me, player)
+        embed.title = "BlackJack!"
+        await player.message.edit(embed=embed)
         await self.remove(player)
 
     async def bust(self, player):
         me = self.bot.get_user(player.user_id)
-        await player.message.edit(embed=bj_bust_embed(me, player))
+        embed = bj_bust_embed(me, player)
+        embed.title = "Busted!"
+        await player.message.edit(embed=embed)
         await self.remove(player)
-
 
     async def hit(self, player):
         player.game.deck.give_random_card(player, 1)
@@ -66,15 +121,27 @@ class Jack(commands.Cog):
 
     async def stay(self, player):
         player.stay = True
+        active_game_session = False
+        participants = player.game.participants
+        for person in participants:
+            if participants[person].stay is False:
+                active_game_session = True
         me = self.bot.get_user(player.user_id)
         await player.message.clear_reactions()
         embed = jack_embed(me, player)
         embed.description = f"**Your bet: ** {player.bet_amount}\n"\
                             f"**Status: **Waiting for other players..."
         await player.message.edit(embed=embed)
+        if not active_game_session:
+            await self.dealers_play(player)
 
     async def double(self, player):
-        pass
+        # debit twice the amount
+        player.bet_amount *= 2
+        player.game.deck.give_random_card(player, 1)
+        me = self.bot.get_user(player.user_id)
+        await player.message.edit(embed=jack_embed(me, player))
+        await self.stay(player)
 
     async def init_blackjack(self, ctx, bet_amount):
         if ctx.channel.id in self.live_games:
@@ -120,10 +187,6 @@ class Jack(commands.Cog):
                     await self._reaction_options[payload.emoji.id](player)
             except Exception as E:
                 print(E)
-
-
-
-
 
 
 def setup(bot):

@@ -32,6 +32,6 @@ red_emotes = {
     "J": "<:rJ:623564440582881282>"
 }
 
-hit_emote_id = 753295581912367124
-stay_emote_id = 753295581983670353
-double_emote_id = 753295582721736844
+hit_emote_id = 753975475910475926
+stay_emote_id = 753975899111555133
+double_emote_id = 753975477319893033

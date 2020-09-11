@@ -67,7 +67,7 @@ class Player:
 
     def __init__(self, user_id, bet_amount, game):
         self.user_id = user_id
-        self.bet_amount = bet_amount
+        self.bet_amount = int(bet_amount)
         self.card_value = 0
         self.cards_owned = []
         self.game = game

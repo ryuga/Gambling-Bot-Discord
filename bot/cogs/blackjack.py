@@ -83,17 +83,17 @@ class Jack(commands.Cog):
         await player.message.edit(embed=bj_push_embed(me, player))
         await self.remove(player)
 
-    async def dealers_play(self, player):
+    async def dealers_play(self, game):
         print("Dealer plays")
         while True:
-            cards = player.game.dealer_cards
+            cards = game.dealer_cards
             card_value = await self.calculate_card_value(cards, dealer=True)
             if card_value < 17:
-                random_cards = player.game.deck.get_random_cards(1)
-                player.game.dealer_cards.append(random_cards[0])
+                random_cards = game.deck.get_random_cards(1)
+                game.dealer_cards.append(random_cards[0])
             else:
                 break
-        await self.evaluate_results(player.game)
+        await self.evaluate_results(game)
 
     async def remove(self, player):
         await player.message.clear_reactions()
@@ -123,23 +123,27 @@ class Jack(commands.Cog):
         me = self.bot.get_user(player.user_id)
         await player.message.edit(embed=jack_embed(me, player))
         await self.check_blackjack(player)
+        await self.check_active_session(player.game)
+
+    async def check_active_session(self, game):
+        active_game_session = False
+        participants = game.participants
+        for person in participants:
+            if participants[person].stay is False:
+                active_game_session = True
+        if not active_game_session:
+            await self.dealers_play(game)
 
     async def stay(self, player):
         player.stay = True
         await self.check_blackjack(player)
-        active_game_session = False
-        participants = player.game.participants
-        for person in participants:
-            if participants[person].stay is False:
-                active_game_session = True
         me = self.bot.get_user(player.user_id)
         await player.message.clear_reactions()
         embed = jack_embed(me, player)
         embed.description = f"**Your bet: ** {player.bet_amount}\n"\
                             f"**Status: **Waiting for other players..."
         await player.message.edit(embed=embed)
-        if not active_game_session:
-            await self.dealers_play(player)
+        await self.check_active_session(player.game)
 
     async def double(self, player):
         # debit twice the amount

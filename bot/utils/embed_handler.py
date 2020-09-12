@@ -1,6 +1,7 @@
 import discord  # noqa
 from discord import Embed  # noqa
-from bot.utils.misc import get_emote_list_string
+from bot.utils.misc import get_flower_string
+
 
 def simple_embed(title, desc, color=discord.Color.blue()):
     return Embed(title=title, description=desc, color=color)
@@ -75,8 +76,31 @@ def fp_template_embed(user: discord.User):
 def fp_embed(user: discord.User, player, hidden=False):
 
     embed = fp_template_embed(user)
-    flower_string = get_emote_list_string(player.flowers, hidden=hidden)
+    flower_string = get_flower_string(player, hidden=hidden)
     embed.add_field(name="Your flowers", value=flower_string)
-    flower_string = get_emote_list_string(player.game.flowers, hidden=hidden)
+    flower_string = get_flower_string(player.game, hidden=hidden)
     embed.add_field(name="Dealer's flower", value=flower_string)
+    return embed
+
+
+def fp_win_embed(user: discord.User, player):
+    embed = fp_embed(user, player)
+    embed.colour = discord.Color.dark_green()
+    embed.description = f"**Outcome: **You won {player.bet_amount}!\n" \
+                        f"your {player.pair_count} pair beats dealer's {player.game.pair_count}"
+    return embed
+
+
+def fp_lose_embed(user: discord.User, player):
+    embed = fp_embed(user, player)
+    embed.colour = discord.Color.dark_red()
+    embed.description = f"**Outcome: **You lost {player.bet_amount}!\n" \
+                        f"Dealer's {player.game.pair_count} pair beats your {player.pair_count}"
+    return embed
+
+
+def fp_tie_embed(user: discord.User, player):
+    embed = fp_embed(user, player)
+    embed.description = f"**Outcome: **Its a tie!\n" \
+                        f"Both of you have {player.game.pair_count} pairs"
     return embed

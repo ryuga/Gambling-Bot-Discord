@@ -12,7 +12,7 @@ def setup():
 
 @bot.event
 async def on_ready():
-    # bot.load_extension("cogs.blackjack")
+    bot.load_extension("cogs.blackjack")
     bot.load_extension("cogs.flower_poker")
     print('ready')
 

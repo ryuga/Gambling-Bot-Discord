@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from bot.utils.poker import Game, Player
 from bot.configs.constants import FLOWERPOKER_MAX_PLAYERS, flower_poker_emoji_id
-from bot.utils.embed_handler import simple_embed, fp_embed
+from bot.utils.embed_handler import simple_embed, fp_embed, fp_win_embed, fp_lose_embed, fp_tie_embed
 
 
 class Jack(commands.Cog):
@@ -14,9 +14,44 @@ class Jack(commands.Cog):
             flower_poker_emoji_id: self.plant
         }
 
+    async def display_results(self, game):
+        participants = game.participants
+        for player in list(participants):
+            player = participants[player]
+            me = self.bot.get_user(player.id)
+            if player.pair_count == player.game.pair_count:
+                await player.message.edit(embed=fp_tie_embed(me, player))
+            elif player.pair_count < player.game.pair_count:
+                await player.message.edit(embed=fp_lose_embed(me, player))
+            else:
+                await player.message.edit(embed=fp_win_embed(me, player))
+
+            await self.remove(player)
+        del self.live_games[game.channel]
+
+    async def remove(self, player):
+        await player.message.clear_reactions()
+        player.game.participants.pop(player.id)
+        self.reactable_messages.pop(player.message.id)
+        del player
+
+    async def check_active_session(self, game):
+        active_game_session = False
+        participants = game.participants
+        for person in participants:
+            if participants[person].planted is False:
+                active_game_session = True
+                break
+        if not active_game_session:
+            await self.display_results(game)
+
     async def plant(self, player):
+        player.planted = True
         me = self.bot.get_user(player.id)
-        await player.message.edit(embed=fp_embed(me, player))
+        embed = fp_embed(me, player, hidden=True)
+        embed.description="**Status: ** Waiting for other players.."
+        await player.message.edit(embed=embed)
+        await self.check_active_session(player.game)
 
     async def init_flower_poker(self, ctx, bet_amount):
         if ctx.channel.id in self.live_games:

@@ -38,11 +38,17 @@ stay_emote_id = 753975899111555133
 double_emote_id = 753975477319893033
 
 # Flower pocker emotes
+default_blank_emote = "<:cardboard_box:754085498384810065>"
+flower_poker_emoji_id = 723876628521943161
 
-flower_emotes  = {
+
+flower_emotes = {
     "red": "<:pepeOK:731169238332473394>",
     "blue": "<:pepecross:731169363121668166>",
     "yellow": "<:monkaS:731169228639698947>",
     "purple": "<:monkaHmm:731169228672991262>",
     "pastel": "<:PepeHands:731169236478722178>"
 }
+
+BLACKJACK_MAX_PLAYERS = 4
+FLOWERPOKER_MAX_PLAYERS = 8

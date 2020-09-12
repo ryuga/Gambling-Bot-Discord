@@ -3,10 +3,9 @@ from discord.ext import commands
 
 from bot.utils.cards import Game, Player
 from bot.utils.embed_handler import simple_embed, jack_embed, bj_bust_embed, bj_win_embed, bj_push_embed
-from bot.configs.constants import hit_emote_id, stay_emote_id, double_emote_id
+from bot.configs.constants import hit_emote_id, stay_emote_id, double_emote_id, BLACKJACK_MAX_PLAYERS
 
 face_cards = ["K", "Q", "J"]
-MAX_PLAYERS = 4
 
 
 class Jack(commands.Cog):
@@ -67,6 +66,7 @@ class Jack(commands.Cog):
                 await self.win_blackjack(participants[player])
             else:
                 await self.push_blackjack(participants[player])
+        del self.live_games[game.channel]
 
     async def win_blackjack(self, player):
         me = self.bot.get_user(player.user_id)
@@ -84,7 +84,6 @@ class Jack(commands.Cog):
         await self.remove(player)
 
     async def dealers_play(self, game):
-        print("Dealer plays")
         while True:
             cards = game.dealer_cards
             card_value = await self.calculate_card_value(cards, dealer=True)
@@ -160,7 +159,7 @@ class Jack(commands.Cog):
             game = Game(ctx.channel.id)
             self.live_games[ctx.channel.id] = game
 
-        if not len(game.participants) == 4:
+        if not len(game.participants) == BLACKJACK_MAX_PLAYERS:
             player = Player(ctx.author.id, bet_amount, game)
             if ctx.author.id not in game.participants:
                 game.participants[ctx.author.id] = player
@@ -175,10 +174,10 @@ class Jack(commands.Cog):
                     await msg.add_reaction(reaction)
                 await self.check_blackjack(player)
             else:
-                await ctx.channel.send(embed=simple_embed("You've already joined the game."
+                await ctx.channel.send(embed=simple_embed("", "You've already joined the game."
                                                           " You can try joining another lobby."))
         else:
-            await ctx.channel.send(embed=simple_embed("The lobby if full. Try in another channel."))
+            await ctx.channel.send(embed=simple_embed("", "The lobby if full. Try in another channel."))
 
     @commands.command()
     async def b(self, ctx, bet_amount):

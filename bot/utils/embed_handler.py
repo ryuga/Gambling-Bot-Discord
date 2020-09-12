@@ -1,14 +1,19 @@
 import discord  # noqa
 from discord import Embed  # noqa
+from bot.utils.misc import get_emote_list_string
+
+def simple_embed(title, desc, color=discord.Color.blue()):
+    return Embed(title=title, description=desc, color=color)
 
 
-def simple_embed(desc, color=discord.Color.blue()):
-    return Embed(title="", description=desc, color=color)
-
-
-def authored_embed(author: discord.User, player, desc: str, color: discord.Color):
-    embed = simple_embed(desc, color)
+def authored_embed(author: discord.User, desc, color: discord.Color):
+    embed = simple_embed("", desc, color)
     embed.set_author(name=author.name, icon_url=author.avatar_url)
+    return embed
+
+
+def bj_template_embed(author: discord.User, player, desc: str, color: discord.Color):
+    embed = authored_embed(author, desc, color)
     embed.set_thumbnail(url="https://www.vhv.rs/dpng/d/541-5416003_poker-club-ic"
                             "on-splash-diwali-coasters-black-background.png")
     card_string = "".join(card.emote for card in player.cards_owned)
@@ -19,15 +24,15 @@ def authored_embed(author: discord.User, player, desc: str, color: discord.Color
 
 
 def jack_embed(user: discord.User, player):
-    embed = authored_embed(user, player, f"**Your bet: **{player.bet_amount}", discord.Color.gold())
+    embed = bj_template_embed(user, player, f"**Your bet: **{player.bet_amount}", discord.Color.gold())
     embed.add_field(name="Dealer hand", value=f"{player.game.dealer_cards[0].emote} + ?")
     return embed
 
 
 def bj_win_embed(user: discord.User, player, show=False):
-    embed = authored_embed(user, player, f"**Outcome: ** You won!\n"
-                                         f"{player.bet_amount} is credited to your account.",
-                           discord.Color.dark_green())
+    embed = bj_template_embed(user, player, f"**Outcome: ** You won!\n"
+                                            f"{player.bet_amount} is credited to your account.",
+                              discord.Color.dark_green())
     if show is True:
         card_string = "".join(card.emote for card in player.game.dealer_cards)
         embed.add_field(name="Dealer's hand", value=card_string)
@@ -37,9 +42,9 @@ def bj_win_embed(user: discord.User, player, show=False):
 
 
 def bj_bust_embed(user: discord.User, player, show=False):
-    embed = authored_embed(user, player, f"**Outcome: ** You lost!\n"
-                                         f"{player.bet_amount} is debited from your account.",
-                           discord.Color.dark_red())
+    embed = bj_template_embed(user, player, f"**Outcome: ** You lost!\n"
+                                            f"{player.bet_amount} is debited from your account.",
+                              discord.Color.dark_red())
     if show is True:
         card_string = "".join(card.emote for card in player.game.dealer_cards)
         embed.add_field(name="Dealer's hand", value=card_string)
@@ -49,9 +54,29 @@ def bj_bust_embed(user: discord.User, player, show=False):
 
 
 def bj_push_embed(user: discord.User, player):
-    embed = authored_embed(user, player, f"**Outcome: ** Its a tie!\n"
-                                         f"{player.bet_amount} is added back to your account.",
-                           discord.Color.dark_blue())
+    embed = bj_template_embed(user, player, f"**Outcome: ** Its a tie!\n"
+                                            f"{player.bet_amount} is added back to your account.",
+                              discord.Color.dark_blue())
     card_string = "".join(card.emote for card in player.game.dealer_cards)
     embed.add_field(name="Dealer's hand", value=card_string)
+    return embed
+
+
+def fp_template_embed(user: discord.User):
+    embed = authored_embed(author=user, desc="", color=discord.Color.gold())
+    embed.title = "Flower Poker"
+    embed.set_thumbnail(url="https://mpng.subpng.com/20200123/zbp/transpa"
+                            "rent-poker-icon-casino-icon-lotto-icon-5e29a1b1654394.2050698115797866734148.jpg")
+    embed.set_footer(text="react below to plant flowers")
+
+    return embed
+
+
+def fp_embed(user: discord.User, player, hidden=False):
+
+    embed = fp_template_embed(user)
+    flower_string = get_emote_list_string(player.flowers, hidden=hidden)
+    embed.add_field(name="Your flowers", value=flower_string)
+    flower_string = get_emote_list_string(player.game.flowers, hidden=hidden)
+    embed.add_field(name="Dealer's flower", value=flower_string)
     return embed
